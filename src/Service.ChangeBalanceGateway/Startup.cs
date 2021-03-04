@@ -47,7 +47,7 @@ namespace Service.ChangeBalanceGateway
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapGrpcSchema<ChangeBalanceService, IChangeBalanceService>();
+                endpoints.MapGrpcSchema<SpotChangeBalanceService, ISpotChangeBalanceService>();
 
                 endpoints.MapGrpcSchemaRegistry();
 

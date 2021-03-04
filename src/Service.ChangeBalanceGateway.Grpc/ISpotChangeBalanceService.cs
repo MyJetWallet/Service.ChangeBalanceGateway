@@ -5,7 +5,7 @@ using Service.ChangeBalanceGateway.Grpc.Models;
 namespace Service.ChangeBalanceGateway.Grpc
 {
     [ServiceContract]
-    public interface IChangeBalanceService
+    public interface ISpotChangeBalanceService
     {
         [OperationContract]
         Task<ChangeBalanceGrpcResponse> ChangeBalanceAsync(ChangeBalanceGrpcRequest request);

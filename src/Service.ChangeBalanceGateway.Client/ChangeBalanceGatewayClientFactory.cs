@@ -21,6 +21,6 @@ namespace Service.ChangeBalanceGateway.Client
             _channel = channel.Intercept(new PrometheusMetricsInterceptor());
         }
 
-        public IChangeBalanceService GetChangeBalanceService() => _channel.CreateGrpcService<IChangeBalanceService>();
+        public ISpotChangeBalanceService GetChangeBalanceService() => _channel.CreateGrpcService<ISpotChangeBalanceService>();
     }
 }

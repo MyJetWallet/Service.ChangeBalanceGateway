@@ -10,28 +10,33 @@ using MyJetWallet.Domain.Assets;
 using MyJetWallet.MatchingEngine.Grpc.Api;
 using Newtonsoft.Json;
 using Service.AssetsDictionary.Client;
+using Service.BalanceHistory.Domain.Models;
+using Service.BalanceHistory.Grpc;
 using Service.ChangeBalanceGateway.Grpc;
 using Service.ChangeBalanceGateway.Grpc.Models;
 using Service.ClientWallets.Grpc;
 
 namespace Service.ChangeBalanceGateway.Services
 {
-    public class ChangeBalanceService: IChangeBalanceService
+    public class SpotChangeBalanceService: ISpotChangeBalanceService
     {
-        private readonly ILogger<ChangeBalanceService> _logger;
+        private readonly ILogger<SpotChangeBalanceService> _logger;
         private readonly ICashServiceClient _cashServiceClient;
         private readonly IAssetsDictionaryClient _assetsDictionaryClient;
         private readonly IClientWalletService _clientWalletService;
+        private readonly IWalletBalanceUpdateOperationInfoService _balanceUpdateOperationInfoService;
 
-        public ChangeBalanceService(ILogger<ChangeBalanceService> logger, 
+        public SpotChangeBalanceService(ILogger<SpotChangeBalanceService> logger, 
             ICashServiceClient cashServiceClient,
             IAssetsDictionaryClient assetsDictionaryClient,
-            IClientWalletService clientWalletService)
+            IClientWalletService clientWalletService,
+            IWalletBalanceUpdateOperationInfoService balanceUpdateOperationInfoService)
         {
             _logger = logger;
             _cashServiceClient = cashServiceClient;
             _assetsDictionaryClient = assetsDictionaryClient;
             _clientWalletService = clientWalletService;
+            _balanceUpdateOperationInfoService = balanceUpdateOperationInfoService;
         }
 
 
@@ -82,6 +87,13 @@ namespace Service.ChangeBalanceGateway.Services
                     ErrorMessage = "Cannot change balance, wallet do not found."
                 };
             }
+
+            await _balanceUpdateOperationInfoService.AddOperationInfoAsync(new WalletBalanceUpdateOperationInfo(
+                request.TransactionId,
+                request.Comment,
+                request.OperationType,
+                request.Agent?.ApplicationName ?? "none",
+                request.Agent?.ApplicationEnvInfo ?? "none"));
 
             var meResp = await _cashServiceClient.CashInOutAsync(new CashInOutOperation()
             {

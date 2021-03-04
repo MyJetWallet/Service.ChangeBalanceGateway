@@ -16,5 +16,8 @@ namespace Service.ChangeBalanceGateway.Settings
 
         [YamlProperty("ChangeBalanceGateway.ClientWalletsGrpcServiceUrl")]
         public string ClientWalletsGrpcServiceUrl { get; set; }
+
+        [YamlProperty("ChangeBalanceGateway.BalanceHistoryWriterGrpcServiceUrl")]
+        public string BalanceHistoryWriterGrpcServiceUrl { get; set; }
     }
 }

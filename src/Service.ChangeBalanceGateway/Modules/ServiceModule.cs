@@ -5,6 +5,7 @@ using MyJetWallet.MatchingEngine.Grpc;
 using MyJetWallet.Sdk.Service;
 using MyNoSqlServer.DataReader;
 using Service.AssetsDictionary.Client;
+using Service.BalanceHistory.Client;
 using Service.ChangeBalanceGateway.Settings;
 using Service.ClientWallets.Client;
 using SimpleTrading.SettingsReader;
@@ -26,6 +27,8 @@ namespace Service.ChangeBalanceGateway.Modules
             builder.RegisterAssetsDictionaryClients(myNoSqlClient);
 
             builder.RegisterClientWalletsClientsWithoutCache(Program.Settings.ClientWalletsGrpcServiceUrl);
+
+            builder.RegisterBalanceHistoryOperationInfoClient(Program.Settings.BalanceHistoryWriterGrpcServiceUrl);
         }
     }
 }
