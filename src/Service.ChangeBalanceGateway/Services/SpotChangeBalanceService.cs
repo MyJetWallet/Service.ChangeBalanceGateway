@@ -91,7 +91,7 @@ namespace Service.ChangeBalanceGateway.Services
             await _balanceUpdateOperationInfoService.AddOperationInfoAsync(new WalletBalanceUpdateOperationInfo(
                 request.TransactionId,
                 request.Comment,
-                request.OperationType,
+                request.OperationType.ToString(),
                 request.Agent?.ApplicationName ?? "none",
                 request.Agent?.ApplicationEnvInfo ?? "none"));
 
