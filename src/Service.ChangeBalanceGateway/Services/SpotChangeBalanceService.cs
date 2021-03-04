@@ -112,7 +112,7 @@ namespace Service.ChangeBalanceGateway.Services
                 Timestamp = Timestamp.FromDateTime(DateTime.UtcNow)
             });
 
-            if (meResp.Status != Status.Ok)
+            if (meResp.Status != Status.Ok && meResp.Status != Status.Duplicate)
             {
                 _logger.LogError($"Cannot change balance, ME error: {meResp.Status}, reason: {meResp.StatusReason}.  Request: {JsonConvert.SerializeObject(request)}");
 
