@@ -22,12 +22,12 @@ namespace TestApp
 
             var resp = await  client.ChangeBalanceAsync(new ChangeBalanceGrpcRequest()
             {
-                ClientId = "test",
-                WalletId = "test--default",
+                ClientId = "test-1",
+                WalletId = "SP-test-1",
                 BrokerId = "jetwallet",
 
                 AssetSymbol = "USD",
-                Amount = 100,
+                Amount = -100,
                 OperationType = ChangeBalanceType.CryptoDeposit,
                 TransactionId = Guid.NewGuid().ToString(),
                 Comment = "Test deposit"
