@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 namespace Service.ChangeBalanceGateway.Grpc.Models
 {
     [DataContract]
-    public class ChangeBalanceGrpcRequest
+    public class PciDssDepositGrpcRequest
     {
         [DataMember(Order = 1)] public string TransactionId { get; set; }
 
@@ -16,8 +16,6 @@ namespace Service.ChangeBalanceGateway.Grpc.Models
         [DataMember(Order = 5)] public string AssetSymbol { get; set; }
 
         [DataMember(Order = 6)] public string Comment { get; set; }
-
-        [DataMember(Order = 7)] public ChangeBalanceType OperationType { get; set; }
 
         [DataMember(Order = 8)] public string BrokerId { get; set; }
 

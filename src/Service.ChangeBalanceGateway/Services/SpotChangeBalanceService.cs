@@ -15,6 +15,7 @@ using Service.BalanceHistory.Grpc;
 using Service.ChangeBalanceGateway.Grpc;
 using Service.ChangeBalanceGateway.Grpc.Models;
 using Service.ClientWallets.Grpc;
+using SimpleTrading.Abstraction.Trading.BalanceOperations;
 
 namespace Service.ChangeBalanceGateway.Services
 {
@@ -40,26 +41,65 @@ namespace Service.ChangeBalanceGateway.Services
         }
 
 
-        public async Task<ChangeBalanceGrpcResponse> ChangeBalanceAsync(ChangeBalanceGrpcRequest request)
+        public async Task<ChangeBalanceGrpcResponse> PciDssDepositAsync(PciDssDepositGrpcRequest request)
         {
             _logger.LogInformation($"Change balance request: {JsonConvert.SerializeObject(request)}");
 
+            if (request.Amount <= 0)
+            {
+                _logger.LogError("PciDss cannot decrease balance. Amount: {amount}, TransactionId: {transactionId}", request.Amount, request.TransactionId);
+                return new ChangeBalanceGrpcResponse()
+                {
+                    Result = false,
+                    TransactionId = request.TransactionId,
+                };
+            }
+
+            var result =  await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId, request.Amount, request.AssetSymbol,
+                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.PciDssDeposit, "pcidss");
+
+            if (!result.Result)
+                _logger.LogError($"Cannot apply 'PciDssDeposit'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
+
+            return result;
+        }
+
+        public async Task<ChangeBalanceGrpcResponse> ManualChangeBalanceAsync(ManualChangeBalanceGrpcRequest request)
+        {
+            _logger.LogInformation($"Manual change balance request: {JsonConvert.SerializeObject(request)}");
+
+            var type = request.Amount > 0 ? ChangeBalanceType.ManualDeposit : ChangeBalanceType.ManualWithdrawal;
+
+            var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId, request.Amount, request.AssetSymbol,
+                request.Comment, request.BrokerId, request.Agent, type, request.Officer);
+
+            if (!result.Result)
+                _logger.LogError($"Cannot apply 'PciDssDeposit'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
+
+            return result;
+        }
+
+
+        private async Task<ChangeBalanceGrpcResponse> ChangeBalanceAsync(
+            string transactionId, string clientId, string walletId, double amount, string assetSymbol,
+            string comment, string brokerId,  AgentInfo agent, ChangeBalanceType type, string changer)
+
+        {
             var asset = _assetsDictionaryClient.GetAssetById(new AssetIdentity()
             {
-                BrokerId = request.BrokerId,
-                Symbol = request.AssetSymbol
+                BrokerId = brokerId,
+                Symbol = assetSymbol
             });
 
             //todo: убрать тут передачу бренда в принципе
-            var wallets = await _clientWalletService.GetWalletsByClient(new JetClientIdentity(request.BrokerId, "default-brand", request.ClientId));
-            var wallet = wallets?.Wallets.FirstOrDefault(e => e.WalletId == request.WalletId);
+            var wallets = await _clientWalletService.GetWalletsByClient(new JetClientIdentity(brokerId, "default-brand", clientId));
+            var wallet = wallets?.Wallets.FirstOrDefault(e => e.WalletId == walletId);
 
             if (asset == null)
             {
-                _logger.LogError($"Cannot change balance, asset do not found.  Request: {JsonConvert.SerializeObject(request)}");
                 return new ChangeBalanceGrpcResponse()
                 {
-                    TransactionId = request.TransactionId,
+                    TransactionId = transactionId,
                     Result = false,
                     ErrorMessage = "Cannot change balance, asset do not found"
                 };
@@ -67,11 +107,9 @@ namespace Service.ChangeBalanceGateway.Services
 
             if (!asset.IsEnabled)
             {
-                _logger.LogError($"Cannot change balance, asset is Disabled.  Request: {JsonConvert.SerializeObject(request)}");
-
                 return new ChangeBalanceGrpcResponse()
                 {
-                    TransactionId = request.TransactionId,
+                    TransactionId = transactionId,
                     Result = false,
                     ErrorMessage = "Cannot change balance, asset is Disabled."
                 };
@@ -79,46 +117,44 @@ namespace Service.ChangeBalanceGateway.Services
 
             if (wallet == null)
             {
-                _logger.LogError($"Cannot change balance, wallet do not found.  Request: {JsonConvert.SerializeObject(request)}");
                 return new ChangeBalanceGrpcResponse()
                 {
-                    TransactionId = request.TransactionId,
+                    TransactionId = transactionId,
                     Result = false,
                     ErrorMessage = "Cannot change balance, wallet do not found."
                 };
             }
 
             await _balanceUpdateOperationInfoService.AddOperationInfoAsync(new WalletBalanceUpdateOperationInfo(
-                request.TransactionId,
-                request.Comment,
-                request.OperationType.ToString(),
-                request.Agent?.ApplicationName ?? "none",
-                request.Agent?.ApplicationEnvInfo ?? "none"));
+                transactionId,
+                comment,
+                type.ToString(),
+                agent?.ApplicationName ?? "none",
+                agent?.ApplicationEnvInfo ?? "none",
+                changer));
 
             var meResp = await _cashServiceClient.CashInOutAsync(new CashInOutOperation()
             {
-                Id = request.TransactionId,
-                MessageId = request.TransactionId,
-                
-                BrokerId = request.BrokerId,
-                AccountId = request.ClientId,
-                WalletId = request.WalletId,
-                
+                Id = transactionId,
+                MessageId = transactionId,
+
+                BrokerId = brokerId,
+                AccountId = clientId,
+                WalletId = walletId,
+
                 Fees = { }, //todo: calculate fee for deposit from fee service
 
                 AssetId = asset.Symbol,
-                Volume = request.Amount.ToString(CultureInfo.InvariantCulture),
-                Description = request.Comment,
+                Volume = amount.ToString(CultureInfo.InvariantCulture),
+                Description = $"{comment} [{changer}]",
                 Timestamp = Timestamp.FromDateTime(DateTime.UtcNow)
             });
 
             if (meResp.Status != Status.Ok && meResp.Status != Status.Duplicate)
             {
-                _logger.LogError($"Cannot change balance, ME error: {meResp.Status}, reason: {meResp.StatusReason}.  Request: {JsonConvert.SerializeObject(request)}");
-
                 return new ChangeBalanceGrpcResponse()
                 {
-                    TransactionId = request.TransactionId,
+                    TransactionId = transactionId,
                     Result = false,
                     ErrorMessage = $"Cannot change balance, ME error: {meResp.Status}, reason: {meResp.StatusReason}"
                 };
@@ -126,9 +162,11 @@ namespace Service.ChangeBalanceGateway.Services
 
             return new ChangeBalanceGrpcResponse()
             {
-                TransactionId = request.TransactionId,
+                TransactionId = transactionId,
                 Result = true
             };
         }
+
+        
     }
 }

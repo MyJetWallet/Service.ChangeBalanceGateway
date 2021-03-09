@@ -7,7 +7,10 @@ namespace Service.ChangeBalanceGateway.Grpc
     [ServiceContract]
     public interface ISpotChangeBalanceService
     {
+        [OperationContract] 
+        Task<ChangeBalanceGrpcResponse> PciDssDepositAsync(PciDssDepositGrpcRequest request);
+
         [OperationContract]
-        Task<ChangeBalanceGrpcResponse> ChangeBalanceAsync(ChangeBalanceGrpcRequest request);
+        Task<ChangeBalanceGrpcResponse> ManualChangeBalanceAsync(ManualChangeBalanceGrpcRequest request);
     }
 }

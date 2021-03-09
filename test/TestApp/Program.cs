@@ -20,18 +20,31 @@ namespace TestApp
             var factory = new ChangeBalanceGatewayClientFactory("http://localhost:80");
             var client = factory.GetChangeBalanceService();
 
-            var resp = await  client.ChangeBalanceAsync(new ChangeBalanceGrpcRequest()
+            var resp = await  client.PciDssDepositAsync(new PciDssDepositGrpcRequest()
             {
                 ClientId = "test-1",
                 WalletId = "SP-test-1",
                 BrokerId = "jetwallet",
 
                 AssetSymbol = "USD",
-                Amount = -100,
-                OperationType = ChangeBalanceType.CryptoDeposit,
+                Amount = 150,
                 TransactionId = Guid.NewGuid().ToString(),
-                Comment = "Test deposit"
+                Comment = "Test pci/dss deposit"
             
+            });
+            Console.WriteLine(JsonSerializer.Serialize(resp));
+
+
+            resp = await client.ManualChangeBalanceAsync(new ManualChangeBalanceGrpcRequest()
+            {
+                ClientId = "test-1",
+                WalletId = "SP-test-1",
+                BrokerId = "jetwallet",
+
+                AssetSymbol = "USD",
+                Amount = -150,
+                TransactionId = Guid.NewGuid().ToString(),
+                Comment = "Test manual withdrawal"
             });
             Console.WriteLine(JsonSerializer.Serialize(resp));
 

@@ -2,8 +2,13 @@ namespace Service.ChangeBalanceGateway.Grpc.Models
 {
     public enum ChangeBalanceType
     {
-        FiatDeposit,
-        CryptoDeposit,
-        ManualDeposit
+        Unknown = 0,
+        
+        PciDssDeposit = 1,
+        CryptoDeposit = 2,
+        ManualDeposit = 3,
+
+
+        ManualWithdrawal = 11
     }
 }
