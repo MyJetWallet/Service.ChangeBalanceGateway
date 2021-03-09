@@ -52,6 +52,7 @@ namespace Service.ChangeBalanceGateway.Services
                 {
                     Result = false,
                     TransactionId = request.TransactionId,
+                    ErrorMessage = "PciDss cannot decrease balance."
                 };
             }
 
@@ -69,6 +70,17 @@ namespace Service.ChangeBalanceGateway.Services
             _logger.LogInformation($"Manual change balance request: {JsonConvert.SerializeObject(request)}");
 
             var type = request.Amount > 0 ? ChangeBalanceType.ManualDeposit : ChangeBalanceType.ManualWithdrawal;
+
+            if (string.IsNullOrEmpty(request.Officer))
+            {
+                _logger.LogError("Manual change deposit cannot be executed without Officer name. TransactionId: {transactionId}", request.TransactionId);
+                return new ChangeBalanceGrpcResponse()
+                {
+                    Result = false,
+                    TransactionId = request.TransactionId,
+                    ErrorMessage = "Manual change deposit cannot be executed without Officer name"
+                };
+            }
 
             var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId, request.Amount, request.AssetSymbol,
                 request.Comment, request.BrokerId, request.Agent, type, request.Officer);

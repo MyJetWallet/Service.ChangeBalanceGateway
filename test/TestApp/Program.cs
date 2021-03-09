@@ -44,7 +44,8 @@ namespace TestApp
                 AssetSymbol = "USD",
                 Amount = -150,
                 TransactionId = Guid.NewGuid().ToString(),
-                Comment = "Test manual withdrawal"
+                Comment = "Test manual withdrawal",
+                Officer = "alexey"
             });
             Console.WriteLine(JsonSerializer.Serialize(resp));
 
