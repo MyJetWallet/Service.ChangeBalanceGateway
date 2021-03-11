@@ -91,6 +91,30 @@ namespace Service.ChangeBalanceGateway.Services
             return result;
         }
 
+        public async Task<ChangeBalanceGrpcResponse> BlockchainDepositAsync(BlockchainDepositGrpcRequest request)
+        {
+            _logger.LogInformation($"Blockchain deposit request: {JsonConvert.SerializeObject(request)}");
+
+            if (request.Amount <= 0)
+            {
+                _logger.LogError("Blockchain deposit cannot decrease balance. Amount: {amount}, TransactionId: {transactionId}", request.Amount, request.TransactionId);
+                return new ChangeBalanceGrpcResponse()
+                {
+                    Result = false,
+                    TransactionId = request.TransactionId,
+                    ErrorMessage = "Blockchain deposit cannot decrease balance."
+                };
+            }
+
+            var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId, request.Amount, request.AssetSymbol,
+                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.CryptoDeposit, request.Integration);
+
+            if (!result.Result)
+                _logger.LogError($"Cannot apply 'Blockchain deposit'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
+
+            return result;
+        }
+
 
         private async Task<ChangeBalanceGrpcResponse> ChangeBalanceAsync(
             string transactionId, string clientId, string walletId, double amount, string assetSymbol,
