@@ -62,3 +62,4 @@ public class MyService
   ISpotChangeBalanceService service = factory.GetChangeBalanceService();
 
 ```
+
