@@ -5,6 +5,23 @@ namespace Service.ChangeBalanceGateway.Grpc.Models
     [DataContract]
     public class BlockchainDepositGrpcRequest
     {
+        public BlockchainDepositGrpcRequest()
+        {
+        }
+
+        public BlockchainDepositGrpcRequest(string transactionId, string clientId, string walletId, double amount, string assetSymbol, string comment, string brokerId, string integration, string txid)
+        {
+            TransactionId = transactionId;
+            ClientId = clientId;
+            WalletId = walletId;
+            Amount = amount;
+            AssetSymbol = assetSymbol;
+            Comment = comment;
+            BrokerId = brokerId;
+            Integration = integration;
+            Txid = txid;
+        }
+
         [DataMember(Order = 1)] public string TransactionId { get; set; }
 
         [DataMember(Order = 2)] public string ClientId { get; set; }
@@ -20,6 +37,8 @@ namespace Service.ChangeBalanceGateway.Grpc.Models
         [DataMember(Order = 8)] public string BrokerId { get; set; }
 
         [DataMember(Order = 9)] public string Integration { get; set; }
+
+        [DataMember(Order = 10)] public string Txid { get; set; }
 
         [DataMember(Order = 11)] public AgentInfo Agent { get; set; } = new AgentInfo();
     }
