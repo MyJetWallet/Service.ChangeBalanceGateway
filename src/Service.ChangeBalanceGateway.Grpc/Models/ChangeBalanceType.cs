@@ -9,6 +9,7 @@ namespace Service.ChangeBalanceGateway.Grpc.Models
         ManualDeposit = 3,
 
 
-        ManualWithdrawal = 11
+        CryptoWithdrawal = 12,
+        ManualWithdrawal = 13,
     }
 }

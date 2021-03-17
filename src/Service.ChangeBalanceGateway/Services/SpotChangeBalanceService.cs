@@ -7,6 +7,7 @@ using ME.Contracts.Api.IncomingMessages;
 using Microsoft.Extensions.Logging;
 using MyJetWallet.Domain;
 using MyJetWallet.Domain.Assets;
+using MyJetWallet.Domain.Transactions;
 using MyJetWallet.MatchingEngine.Grpc.Api;
 using Newtonsoft.Json;
 using Service.AssetsDictionary.Client;
@@ -57,7 +58,7 @@ namespace Service.ChangeBalanceGateway.Services
             }
 
             var result =  await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId, request.Amount, request.AssetSymbol,
-                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.PciDssDeposit, "pcidss", string.Empty);
+                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.PciDssDeposit, "pcidss", string.Empty, TransactionStatus.Confirmed);
 
             if (!result.Result)
                 _logger.LogError($"Cannot apply 'PciDssDeposit'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
@@ -83,7 +84,7 @@ namespace Service.ChangeBalanceGateway.Services
             }
 
             var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId, request.Amount, request.AssetSymbol,
-                request.Comment, request.BrokerId, request.Agent, type, request.Officer, string.Empty);
+                request.Comment, request.BrokerId, request.Agent, type, request.Officer, string.Empty, TransactionStatus.Confirmed);
 
             if (!result.Result)
                 _logger.LogError($"Cannot apply 'PciDssDeposit'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
@@ -91,7 +92,7 @@ namespace Service.ChangeBalanceGateway.Services
             return result;
         }
 
-        public async Task<ChangeBalanceGrpcResponse> BlockchainDepositAsync(BlockchainDepositGrpcRequest request)
+        public async Task<ChangeBalanceGrpcResponse> BlockchainDepositAsync(BlockchainTransferGrpcRequest request)
         {
             _logger.LogInformation($"Blockchain deposit request: {JsonConvert.SerializeObject(request)}");
 
@@ -107,7 +108,7 @@ namespace Service.ChangeBalanceGateway.Services
             }
 
             var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId, request.Amount, request.AssetSymbol,
-                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.CryptoDeposit, request.Integration, request.Txid);
+                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.CryptoDeposit, request.Integration, request.Txid, request.Status);
 
             if (!result.Result)
                 _logger.LogError($"Cannot apply 'Blockchain deposit'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
@@ -115,10 +116,34 @@ namespace Service.ChangeBalanceGateway.Services
             return result;
         }
 
+        public async Task<ChangeBalanceGrpcResponse> BlockchainWithdrawalAsync(BlockchainTransferGrpcRequest request)
+        {
+            _logger.LogInformation($"Blockchain withdrawal request: {JsonConvert.SerializeObject(request)}");
+
+            if (request.Amount >= 0)
+            {
+                _logger.LogError("Blockchain withdrawal cannot increase balance. Amount: {amount}, TransactionId: {transactionId}", request.Amount, request.TransactionId);
+                return new ChangeBalanceGrpcResponse()
+                {
+                    Result = false,
+                    TransactionId = request.TransactionId,
+                    ErrorMessage = "Blockchain withdrawal cannot increase balance."
+                };
+            }
+
+            var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId, request.Amount, request.AssetSymbol,
+                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.CryptoWithdrawal, request.Integration, request.Txid, request.Status);
+
+            if (!result.Result)
+                _logger.LogError($"Cannot apply 'Blockchain withdrawal'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
+
+            return result;
+        }
+
 
         private async Task<ChangeBalanceGrpcResponse> ChangeBalanceAsync(
             string transactionId, string clientId, string walletId, double amount, string assetSymbol,
-            string comment, string brokerId,  AgentInfo agent, ChangeBalanceType type, string changer, string txid)
+            string comment, string brokerId,  AgentInfo agent, ChangeBalanceType type, string changer, string txid, TransactionStatus status)
 
         {
             var asset = _assetsDictionaryClient.GetAssetById(new AssetIdentity()
@@ -168,7 +193,9 @@ namespace Service.ChangeBalanceGateway.Services
                 agent?.ApplicationName ?? "none",
                 agent?.ApplicationEnvInfo ?? "none",
                 changer,
-                txid));
+                txid,
+                status
+                ));
 
             var meResp = await _cashServiceClient.CashInOutAsync(new CashInOutOperation()
             {

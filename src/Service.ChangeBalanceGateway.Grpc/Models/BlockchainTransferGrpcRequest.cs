@@ -1,15 +1,16 @@
 using System.Runtime.Serialization;
+using MyJetWallet.Domain.Transactions;
 
 namespace Service.ChangeBalanceGateway.Grpc.Models
 {
     [DataContract]
-    public class BlockchainDepositGrpcRequest
+    public class BlockchainTransferGrpcRequest
     {
-        public BlockchainDepositGrpcRequest()
+        public BlockchainTransferGrpcRequest()
         {
         }
 
-        public BlockchainDepositGrpcRequest(string transactionId, string clientId, string walletId, double amount, string assetSymbol, string comment, string brokerId, string integration, string txid)
+        public BlockchainTransferGrpcRequest(string transactionId, string clientId, string walletId, double amount, string assetSymbol, string comment, string brokerId, string integration, string txid)
         {
             TransactionId = transactionId;
             ClientId = clientId;
@@ -40,6 +41,8 @@ namespace Service.ChangeBalanceGateway.Grpc.Models
 
         [DataMember(Order = 10)] public string Txid { get; set; }
 
-        [DataMember(Order = 11)] public AgentInfo Agent { get; set; } = new AgentInfo();
+        [DataMember(Order = 11)] public TransactionStatus Status { get; set; }
+
+        [DataMember(Order = 12)] public AgentInfo Agent { get; set; } = new AgentInfo();
     }
 }
