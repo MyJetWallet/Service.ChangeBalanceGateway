@@ -4,13 +4,14 @@ using MyJetWallet.Domain.Transactions;
 namespace Service.ChangeBalanceGateway.Grpc.Models
 {
     [DataContract]
-    public class BlockchainTransferGrpcRequest
+    public class BlockchainWithdrawalGrpcRequest
     {
-        public BlockchainTransferGrpcRequest()
+        public BlockchainWithdrawalGrpcRequest()
         {
         }
 
-        public BlockchainTransferGrpcRequest(string transactionId, string clientId, string walletId, double amount, string assetSymbol, string comment, string brokerId, string integration, string txid)
+        public BlockchainWithdrawalGrpcRequest(string transactionId, string clientId, string walletId, double amount, string assetSymbol, string comment, string brokerId, 
+            string integration, string txid, TransactionStatus status, string withdrawalAddress)
         {
             TransactionId = transactionId;
             ClientId = clientId;
@@ -21,6 +22,8 @@ namespace Service.ChangeBalanceGateway.Grpc.Models
             BrokerId = brokerId;
             Integration = integration;
             Txid = txid;
+            Status = status;
+            WithdrawalAddress = withdrawalAddress;
         }
 
         [DataMember(Order = 1)] public string TransactionId { get; set; }
@@ -43,6 +46,8 @@ namespace Service.ChangeBalanceGateway.Grpc.Models
 
         [DataMember(Order = 11)] public TransactionStatus Status { get; set; }
 
-        [DataMember(Order = 12)] public AgentInfo Agent { get; set; } = new AgentInfo();
+        [DataMember(Order = 12)] public string WithdrawalAddress { get; set; }
+
+        [DataMember(Order = 13)] public AgentInfo Agent { get; set; } = new AgentInfo();
     }
 }
