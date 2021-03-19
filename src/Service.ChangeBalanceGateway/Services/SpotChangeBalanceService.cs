@@ -53,7 +53,8 @@ namespace Service.ChangeBalanceGateway.Services
                 {
                     Result = false,
                     TransactionId = request.TransactionId,
-                    ErrorMessage = "PciDss cannot decrease balance."
+                    ErrorMessage = "PciDss cannot decrease balance.",
+                    ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.BadRequest
                 };
             }
 
@@ -79,7 +80,8 @@ namespace Service.ChangeBalanceGateway.Services
                 {
                     Result = false,
                     TransactionId = request.TransactionId,
-                    ErrorMessage = "Manual change deposit cannot be executed without Officer name"
+                    ErrorMessage = "Manual change deposit cannot be executed without Officer name",
+                    ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.BadRequest
                 };
             }
 
@@ -103,7 +105,8 @@ namespace Service.ChangeBalanceGateway.Services
                 {
                     Result = false,
                     TransactionId = request.TransactionId,
-                    ErrorMessage = "Blockchain deposit cannot decrease balance."
+                    ErrorMessage = "Blockchain deposit cannot decrease balance.",
+                    ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.BadRequest
                 };
             }
 
@@ -127,7 +130,8 @@ namespace Service.ChangeBalanceGateway.Services
                 {
                     Result = false,
                     TransactionId = request.TransactionId,
-                    ErrorMessage = "Blockchain withdrawal cannot increase balance."
+                    ErrorMessage = "Blockchain withdrawal cannot increase balance.",
+                    ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.BadRequest
                 };
             }
 
@@ -162,7 +166,8 @@ namespace Service.ChangeBalanceGateway.Services
                 {
                     TransactionId = transactionId,
                     Result = false,
-                    ErrorMessage = "Cannot change balance, asset do not found"
+                    ErrorMessage = "Cannot change balance, asset do not found",
+                    ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.AssetDoNotFound
                 };
             }
 
@@ -172,7 +177,8 @@ namespace Service.ChangeBalanceGateway.Services
                 {
                     TransactionId = transactionId,
                     Result = false,
-                    ErrorMessage = "Cannot change balance, asset is Disabled."
+                    ErrorMessage = "Cannot change balance, asset is Disabled.",
+                    ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.AssetIsDisabled
                 };
             }
 
@@ -182,7 +188,8 @@ namespace Service.ChangeBalanceGateway.Services
                 {
                     TransactionId = transactionId,
                     Result = false,
-                    ErrorMessage = "Cannot change balance, wallet do not found."
+                    ErrorMessage = "Cannot change balance, wallet do not found.",
+                    ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.WalletDoNotFound
                 };
             }
 
@@ -217,18 +224,26 @@ namespace Service.ChangeBalanceGateway.Services
 
             if (meResp.Status != Status.Ok && meResp.Status != Status.Duplicate)
             {
-                return new ChangeBalanceGrpcResponse()
+                var res = new ChangeBalanceGrpcResponse()
                 {
                     TransactionId = transactionId,
                     Result = false,
-                    ErrorMessage = $"Cannot change balance, ME error: {meResp.Status}, reason: {meResp.StatusReason}"
+                    ErrorMessage = $"Cannot change balance, ME error: {meResp.Status}, reason: {meResp.StatusReason}",
+                    ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.MeError
                 };
+
+                if (meResp.Status == Status.LowBalance)
+                    res.ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.LowBalance;
+
+                if (meResp.Status == Status.Duplicate)
+                    res.ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.Duplicate;
             }
 
             return new ChangeBalanceGrpcResponse()
             {
                 TransactionId = transactionId,
-                Result = true
+                Result = true,
+                ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.Ok
             };
         }
 
