@@ -144,6 +144,18 @@ namespace Service.ChangeBalanceGateway.Services
             return result;
         }
 
+        public async Task<ChangeBalanceGrpcResponse> BlockchainFeeApplyAsync(BlockchainFeeApplyGrpcRequest request)
+        {
+            _logger.LogInformation("BlockchainFeeApplyGrpcRequest receive: {jsonText}", JsonConvert.SerializeObject(request));
+
+            return new ChangeBalanceGrpcResponse()
+            {
+                ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.Ok,
+                TransactionId = $"fee:{request.TransactionId}",
+                Result = true
+            };
+        }
+
 
         private async Task<ChangeBalanceGrpcResponse> ChangeBalanceAsync(
             string transactionId, string clientId, string walletId, double amount, string assetSymbol,

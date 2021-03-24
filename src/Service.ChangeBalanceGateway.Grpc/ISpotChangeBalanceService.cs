@@ -18,5 +18,8 @@ namespace Service.ChangeBalanceGateway.Grpc
 
         [OperationContract]
         Task<ChangeBalanceGrpcResponse> BlockchainWithdrawalAsync(BlockchainWithdrawalGrpcRequest request);
+
+        [OperationContract]
+        Task<ChangeBalanceGrpcResponse> BlockchainFeeApplyAsync(BlockchainFeeApplyGrpcRequest request);
     }
 }
