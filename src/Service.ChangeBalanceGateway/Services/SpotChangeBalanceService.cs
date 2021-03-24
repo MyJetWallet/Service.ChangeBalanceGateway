@@ -214,10 +214,11 @@ namespace Service.ChangeBalanceGateway.Services
                 changer,
                 txid,
                 status,
-                withdrawalAddress
+                withdrawalAddress,
+                string.Empty
                 ));
 
-            var meResp = await _cashServiceClient.CashInOutAsync(new CashInOutOperation()
+            var meRequest = new CashInOutOperation()
             {
                 Id = transactionId,
                 MessageId = transactionId,
@@ -232,7 +233,12 @@ namespace Service.ChangeBalanceGateway.Services
                 Volume = amount.ToString(CultureInfo.InvariantCulture),
                 Description = $"{comment} [{changer}]",
                 Timestamp = Timestamp.FromDateTime(DateTime.UtcNow)
-            });
+            };
+
+            var meResp = await _cashServiceClient.CashInOutAsync(meRequest);
+
+            _logger.LogInformation("Me call. Request: {requestText}. Response: {responseText}",
+                JsonConvert.SerializeObject(meRequest), JsonConvert.SerializeObject(meResp));
 
             if (meResp.Status != Status.Ok && meResp.Status != Status.Duplicate)
             {
