@@ -19,5 +19,8 @@ namespace Service.ChangeBalanceGateway.Settings
 
         [YamlProperty("ChangeBalanceGateway.BalanceHistoryWriterGrpcServiceUrl")]
         public string BalanceHistoryWriterGrpcServiceUrl { get; set; }
+
+        [YamlProperty("ChangeBalanceGateway.ZipkinUrl")]
+        public string ZipkinUrl { get; set; }
     }
 }
