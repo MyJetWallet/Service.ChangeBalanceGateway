@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="7.1.0" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.36.0" />
-    <PackageReference Include="JetBrains.Annotations" Version="2020.3.0" />
+    <PackageReference Include="JetBrains.Annotations" Version="2021.1.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
     <PackageReference Include="MyJetWallet.MatchingEngine.Grpc" Version="1.1.1" />
@@ -24,7 +24,7 @@
     <PackageReference Include="SimpleTrading.ServiceStatusReporterConnector" Version="1.0.7" />
     <PackageReference Include="SimpleTrading.SettingsReader" Version="1.1.0" />
     <PackageReference Include="MyJetWallet.Service.ClientWallets.Client" Version="1.0.4" />
-    <PackageReference Include="MyJetWallet.Service.AssetsDictionary.Client" Version="1.5.3" />
+    <PackageReference Include="MyJetWallet.Service.AssetsDictionary.Client" Version="1.5.4" />
   </ItemGroup>
 
   <ItemGroup>
