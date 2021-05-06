@@ -4,12 +4,12 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Google.Protobuf.WellKnownTypes;
+using ME.Contracts.Api;
 using ME.Contracts.Api.IncomingMessages;
 using Microsoft.Extensions.Logging;
 using MyJetWallet.Domain;
 using MyJetWallet.Domain.Assets;
 using MyJetWallet.Domain.Transactions;
-using MyJetWallet.MatchingEngine.Grpc.Api;
 using MyJetWallet.Sdk.Service;
 using Newtonsoft.Json;
 using OpenTelemetry.Trace;
@@ -19,21 +19,20 @@ using Service.BalanceHistory.Grpc;
 using Service.ChangeBalanceGateway.Grpc;
 using Service.ChangeBalanceGateway.Grpc.Models;
 using Service.ClientWallets.Grpc;
-using SimpleTrading.Abstraction.Trading.BalanceOperations;
-using Status = ME.Contracts.Api.IncomingMessages.Status;
+using Status = OpenTelemetry.Trace.Status;
 
 namespace Service.ChangeBalanceGateway.Services
 {
     public class SpotChangeBalanceService: ISpotChangeBalanceService
     {
         private readonly ILogger<SpotChangeBalanceService> _logger;
-        private readonly ICashServiceClient _cashServiceClient;
+        private readonly CashService.CashServiceClient _cashServiceClient;
         private readonly IAssetsDictionaryClient _assetsDictionaryClient;
         private readonly IClientWalletService _clientWalletService;
         private readonly IWalletBalanceUpdateOperationInfoService _balanceUpdateOperationInfoService;
 
         public SpotChangeBalanceService(ILogger<SpotChangeBalanceService> logger, 
-            ICashServiceClient cashServiceClient,
+            CashService.CashServiceClient cashServiceClient,
             IAssetsDictionaryClient assetsDictionaryClient,
             IClientWalletService clientWalletService,
             IWalletBalanceUpdateOperationInfoService balanceUpdateOperationInfoService)
@@ -58,7 +57,7 @@ namespace Service.ChangeBalanceGateway.Services
             {
                 _logger.LogError("PciDss cannot decrease balance. Amount: {amount}, TransactionId: {transactionId}", request.Amount, request.TransactionId);
 
-                Activity.Current?.SetStatus(OpenTelemetry.Trace.Status.Error);
+                Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "PciDss cannot decrease balance");
 
                 return new ChangeBalanceGrpcResponse()
@@ -76,7 +75,7 @@ namespace Service.ChangeBalanceGateway.Services
             if (!result.Result)
             {
                 _logger.LogError($"Cannot apply 'PciDssDeposit'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
-                Activity.Current?.SetStatus(OpenTelemetry.Trace.Status.Error);
+                Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Cannot apply 'PciDssDeposit'");
                 result.AddToActivityAsJsonTag("change-balance-response");
             }
@@ -97,7 +96,7 @@ namespace Service.ChangeBalanceGateway.Services
             if (string.IsNullOrEmpty(request.Officer))
             {
                 _logger.LogError("Manual change deposit cannot be executed without Officer name. TransactionId: {transactionId}", request.TransactionId);
-                Activity.Current?.SetStatus(OpenTelemetry.Trace.Status.Error);
+                Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Manual change deposit cannot be executed without Officer name");
                 return new ChangeBalanceGrpcResponse()
                 {
@@ -116,7 +115,7 @@ namespace Service.ChangeBalanceGateway.Services
             if (!result.Result)
             {
                 _logger.LogError($"Cannot apply 'ManualChangeBalance'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
-                Activity.Current?.SetStatus(OpenTelemetry.Trace.Status.Error);
+                Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Cannot apply 'ManualChangeBalance'");
                 result.AddToActivityAsJsonTag("change-balance-response");
             }
@@ -135,7 +134,7 @@ namespace Service.ChangeBalanceGateway.Services
             if (request.Amount <= 0)
             {
                 _logger.LogError("Blockchain deposit cannot decrease balance. Amount: {amount}, TransactionId: {transactionId}", request.Amount, request.TransactionId);
-                Activity.Current?.SetStatus(OpenTelemetry.Trace.Status.Error);
+                Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Blockchain deposit cannot decrease balance");
                 return new ChangeBalanceGrpcResponse()
                 {
@@ -152,7 +151,7 @@ namespace Service.ChangeBalanceGateway.Services
             if (!result.Result)
             {
                 _logger.LogError($"Cannot apply 'Blockchain deposit'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
-                Activity.Current?.SetStatus(OpenTelemetry.Trace.Status.Error);
+                Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Cannot apply 'Blockchain deposit'");
                 result.AddToActivityAsJsonTag("change-balance-response");
             }
@@ -171,7 +170,7 @@ namespace Service.ChangeBalanceGateway.Services
             if (request.Amount >= 0)
             {
                 _logger.LogError("Blockchain withdrawal cannot increase balance. Amount: {amount}, TransactionId: {transactionId}", request.Amount, request.TransactionId);
-                Activity.Current?.SetStatus(OpenTelemetry.Trace.Status.Error);
+                Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Blockchain withdrawal cannot increase balance");
                 return new ChangeBalanceGrpcResponse()
                 {
@@ -188,7 +187,7 @@ namespace Service.ChangeBalanceGateway.Services
             if (!result.Result)
             {
                 _logger.LogError($"Cannot apply 'Blockchain withdrawal'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
-                Activity.Current?.SetStatus(OpenTelemetry.Trace.Status.Error);
+                Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Cannot apply 'Blockchain deposit'");
                 result.AddToActivityAsJsonTag("change-balance-response");
             }
@@ -295,7 +294,7 @@ namespace Service.ChangeBalanceGateway.Services
             _logger.LogInformation("Me call. Request: {requestText}. Response: {responseText}",
                 JsonConvert.SerializeObject(meRequest), JsonConvert.SerializeObject(meResp));
 
-            if (meResp.Status != Status.Ok && meResp.Status != Status.Duplicate)
+            if (meResp.Status != ME.Contracts.Api.IncomingMessages.Status.Ok && meResp.Status != ME.Contracts.Api.IncomingMessages.Status.Duplicate)
             {
                 var res = new ChangeBalanceGrpcResponse()
                 {
@@ -305,10 +304,10 @@ namespace Service.ChangeBalanceGateway.Services
                     ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.MeError
                 };
 
-                if (meResp.Status == Status.LowBalance)
+                if (meResp.Status == ME.Contracts.Api.IncomingMessages.Status.LowBalance)
                     res.ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.LowBalance;
 
-                if (meResp.Status == Status.Duplicate)
+                if (meResp.Status == ME.Contracts.Api.IncomingMessages.Status.Duplicate)
                     res.ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.Duplicate;
             }
 

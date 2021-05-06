@@ -8,8 +8,8 @@ namespace Service.ChangeBalanceGateway.Settings
         [YamlProperty("ChangeBalanceGateway.SeqServiceUrl")]
         public string SeqServiceUrl { get; set; }
 
-        [YamlProperty("ChangeBalanceGateway.MatchingEngine.CashServiceGrpcUrl")]
-        public string MatchingEngineCashServiceGrpcUrl { get; set; }
+        [YamlProperty("ChangeBalanceGateway.MatchingEngineApiGrpcServiceUrl")]
+        public string MatchingEngineApiGrpcServiceUrl { get; set; }
 
         [YamlProperty("ChangeBalanceGateway.MyNoSqlReaderHostPort")]
         public string MyNoSqlReaderHostPort { get; set; }

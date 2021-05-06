@@ -1,10 +1,10 @@
 ﻿using Autofac;
-using MyJetWallet.MatchingEngine.Grpc;
 using MyJetWallet.Sdk.Service;
 using MyNoSqlServer.DataReader;
 using Service.AssetsDictionary.Client;
 using Service.BalanceHistory.Client;
 using Service.ClientWallets.Client;
+using Service.MatchingEngine.Api.Client;
 
 namespace Service.ChangeBalanceGateway.Modules
 {
@@ -12,7 +12,7 @@ namespace Service.ChangeBalanceGateway.Modules
     {
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterMatchingEngineGrpcClient(cashServiceGrpcUrl: Program.Settings.MatchingEngineCashServiceGrpcUrl);
+            builder.RegisterMatchingEngineApiClient(Program.Settings.MatchingEngineApiGrpcServiceUrl);
 
             var myNoSqlClient = new MyNoSqlTcpClient(
                 Program.ReloadedSettings(e => e.MyNoSqlReaderHostPort),
