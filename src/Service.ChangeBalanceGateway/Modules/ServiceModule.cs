@@ -4,6 +4,7 @@ using MyNoSqlServer.DataReader;
 using Service.AssetsDictionary.Client;
 using Service.BalanceHistory.Client;
 using Service.ClientWallets.Client;
+using Service.Fees.Client;
 using Service.MatchingEngine.Api.Client;
 
 namespace Service.ChangeBalanceGateway.Modules
@@ -21,6 +22,8 @@ namespace Service.ChangeBalanceGateway.Modules
             builder.RegisterInstance(myNoSqlClient).AsSelf().SingleInstance();
 
             builder.RegisterAssetsDictionaryClients(myNoSqlClient);
+            
+            builder.RegisterAssetFeesClients(myNoSqlClient);
 
             builder.RegisterClientWalletsClientsWithoutCache(Program.Settings.ClientWalletsGrpcServiceUrl);
 

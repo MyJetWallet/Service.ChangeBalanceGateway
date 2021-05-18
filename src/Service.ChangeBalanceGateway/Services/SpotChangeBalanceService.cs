@@ -19,29 +19,34 @@ using Service.BalanceHistory.Grpc;
 using Service.ChangeBalanceGateway.Grpc;
 using Service.ChangeBalanceGateway.Grpc.Models;
 using Service.ClientWallets.Grpc;
+using Service.Fees.Client;
+using Service.Fees.Domain.Models;
 using Status = OpenTelemetry.Trace.Status;
 
 namespace Service.ChangeBalanceGateway.Services
 {
-    public class SpotChangeBalanceService: ISpotChangeBalanceService
+    public class SpotChangeBalanceService : ISpotChangeBalanceService
     {
         private readonly ILogger<SpotChangeBalanceService> _logger;
         private readonly CashService.CashServiceClient _cashServiceClient;
         private readonly IAssetsDictionaryClient _assetsDictionaryClient;
         private readonly IClientWalletService _clientWalletService;
         private readonly IWalletBalanceUpdateOperationInfoService _balanceUpdateOperationInfoService;
+        private readonly IAssetFeesClient _assetFeesClient;
 
-        public SpotChangeBalanceService(ILogger<SpotChangeBalanceService> logger, 
+        public SpotChangeBalanceService(ILogger<SpotChangeBalanceService> logger,
             CashService.CashServiceClient cashServiceClient,
             IAssetsDictionaryClient assetsDictionaryClient,
             IClientWalletService clientWalletService,
-            IWalletBalanceUpdateOperationInfoService balanceUpdateOperationInfoService)
+            IWalletBalanceUpdateOperationInfoService balanceUpdateOperationInfoService,
+            IAssetFeesClient assetFeesClient)
         {
             _logger = logger;
             _cashServiceClient = cashServiceClient;
             _assetsDictionaryClient = assetsDictionaryClient;
             _clientWalletService = clientWalletService;
             _balanceUpdateOperationInfoService = balanceUpdateOperationInfoService;
+            _assetFeesClient = assetFeesClient;
         }
 
 
@@ -55,7 +60,8 @@ namespace Service.ChangeBalanceGateway.Services
 
             if (request.Amount <= 0)
             {
-                _logger.LogError("PciDss cannot decrease balance. Amount: {amount}, TransactionId: {transactionId}", request.Amount, request.TransactionId);
+                _logger.LogError("PciDss cannot decrease balance. Amount: {amount}, TransactionId: {transactionId}",
+                    request.Amount, request.TransactionId);
 
                 Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "PciDss cannot decrease balance");
@@ -69,12 +75,15 @@ namespace Service.ChangeBalanceGateway.Services
                 };
             }
 
-            var result =  await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId, request.Amount, request.AssetSymbol,
-                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.PciDssDeposit, "pcidss", string.Empty, TransactionStatus.Confirmed, string.Empty);
+            var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId,
+                request.Amount, request.AssetSymbol,
+                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.PciDssDeposit, "pcidss",
+                string.Empty, TransactionStatus.Confirmed, string.Empty);
 
             if (!result.Result)
             {
-                _logger.LogError($"Cannot apply 'PciDssDeposit'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
+                _logger.LogError(
+                    $"Cannot apply 'PciDssDeposit'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
                 Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Cannot apply 'PciDssDeposit'");
                 result.AddToActivityAsJsonTag("change-balance-response");
@@ -95,7 +104,9 @@ namespace Service.ChangeBalanceGateway.Services
 
             if (string.IsNullOrEmpty(request.Officer))
             {
-                _logger.LogError("Manual change deposit cannot be executed without Officer name. TransactionId: {transactionId}", request.TransactionId);
+                _logger.LogError(
+                    "Manual change deposit cannot be executed without Officer name. TransactionId: {transactionId}",
+                    request.TransactionId);
                 Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Manual change deposit cannot be executed without Officer name");
                 return new ChangeBalanceGrpcResponse()
@@ -109,12 +120,15 @@ namespace Service.ChangeBalanceGateway.Services
 
             request.Officer.AddToActivityAsTag("officer");
 
-            var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId, request.Amount, request.AssetSymbol,
-                request.Comment, request.BrokerId, request.Agent, type, request.Officer, string.Empty, TransactionStatus.Confirmed, string.Empty);
+            var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId,
+                request.Amount, request.AssetSymbol,
+                request.Comment, request.BrokerId, request.Agent, type, request.Officer, string.Empty,
+                TransactionStatus.Confirmed, string.Empty);
 
             if (!result.Result)
             {
-                _logger.LogError($"Cannot apply 'ManualChangeBalance'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
+                _logger.LogError(
+                    $"Cannot apply 'ManualChangeBalance'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
                 Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Cannot apply 'ManualChangeBalance'");
                 result.AddToActivityAsJsonTag("change-balance-response");
@@ -133,7 +147,9 @@ namespace Service.ChangeBalanceGateway.Services
 
             if (request.Amount <= 0)
             {
-                _logger.LogError("Blockchain deposit cannot decrease balance. Amount: {amount}, TransactionId: {transactionId}", request.Amount, request.TransactionId);
+                _logger.LogError(
+                    "Blockchain deposit cannot decrease balance. Amount: {amount}, TransactionId: {transactionId}",
+                    request.Amount, request.TransactionId);
                 Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Blockchain deposit cannot decrease balance");
                 return new ChangeBalanceGrpcResponse()
@@ -145,12 +161,15 @@ namespace Service.ChangeBalanceGateway.Services
                 };
             }
 
-            var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId, request.Amount, request.AssetSymbol,
-                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.CryptoDeposit, request.Integration, request.Txid, TransactionStatus.Confirmed, String.Empty);
+            var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId,
+                request.Amount, request.AssetSymbol,
+                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.CryptoDeposit, request.Integration,
+                request.Txid, TransactionStatus.Confirmed, String.Empty);
 
             if (!result.Result)
             {
-                _logger.LogError($"Cannot apply 'Blockchain deposit'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
+                _logger.LogError(
+                    $"Cannot apply 'Blockchain deposit'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
                 Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Cannot apply 'Blockchain deposit'");
                 result.AddToActivityAsJsonTag("change-balance-response");
@@ -169,7 +188,9 @@ namespace Service.ChangeBalanceGateway.Services
 
             if (request.Amount >= 0)
             {
-                _logger.LogError("Blockchain withdrawal cannot increase balance. Amount: {amount}, TransactionId: {transactionId}", request.Amount, request.TransactionId);
+                _logger.LogError(
+                    "Blockchain withdrawal cannot increase balance. Amount: {amount}, TransactionId: {transactionId}",
+                    request.Amount, request.TransactionId);
                 Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Blockchain withdrawal cannot increase balance");
                 return new ChangeBalanceGrpcResponse()
@@ -181,12 +202,15 @@ namespace Service.ChangeBalanceGateway.Services
                 };
             }
 
-            var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId, request.Amount, request.AssetSymbol,
-                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.CryptoWithdrawal, request.Integration, request.Txid, request.Status, request.WithdrawalAddress);
+            var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId,
+                request.Amount, request.AssetSymbol,
+                request.Comment, request.BrokerId, request.Agent, ChangeBalanceType.CryptoWithdrawal,
+                request.Integration, request.Txid, request.Status, request.WithdrawalAddress);
 
             if (!result.Result)
             {
-                _logger.LogError($"Cannot apply 'Blockchain withdrawal'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
+                _logger.LogError(
+                    $"Cannot apply 'Blockchain withdrawal'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
                 Activity.Current?.SetStatus(Status.Error);
                 Activity.Current?.AddTag("message", "Cannot apply 'Blockchain deposit'");
                 result.AddToActivityAsJsonTag("change-balance-response");
@@ -197,23 +221,46 @@ namespace Service.ChangeBalanceGateway.Services
 
         public async Task<ChangeBalanceGrpcResponse> BlockchainFeeApplyAsync(BlockchainFeeApplyGrpcRequest request)
         {
-            _logger.LogInformation("BlockchainFeeApplyGrpcRequest receive: {jsonText}", JsonConvert.SerializeObject(request));
+            _logger.LogInformation("BlockchainFeeApplyGrpcRequest receive: {jsonText}",
+                JsonConvert.SerializeObject(request));
 
             request.BrokerId.AddToActivityAsTag("brokerId");
             request.WalletId.AddToActivityAsTag("walletId");
 
-            return new ChangeBalanceGrpcResponse()
+            var fees = _assetFeesClient.GetAssetFees(request.BrokerId, request.AssetSymbol, OperationType.Withdrawal);
+
+            if (fees == null)
             {
-                ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.Ok,
-                TransactionId = $"fee:{request.TransactionId}",
-                Result = true
-            };
+                return new ChangeBalanceGrpcResponse()
+                {
+                    ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.Ok,
+                    TransactionId = $"fee:{request.TransactionId}",
+                    Result = true
+                };
+            }
+
+            var result = await ChangeBalanceAsync(Guid.NewGuid().ToString(), fees.AccountId, fees.WalletId,
+                request.FeeAmount, request.AssetSymbol,
+                "Deduct actual fee", fees.BrokerId, null, ChangeBalanceType.CryptoWithdrawal, "BitGo",
+                request.TransactionId, TransactionStatus.Confirmed, "Fees");
+            
+            if (!result.Result)
+            {
+                _logger.LogError(
+                    $"Cannot apply 'Blockchain fee'. Message: {result.ErrorMessage}. Request: {JsonConvert.SerializeObject(request)}");
+                Activity.Current?.SetStatus(Status.Error);
+                Activity.Current?.AddTag("message", "Cannot apply 'Blockchain fee'");
+                result.AddToActivityAsJsonTag("change-balance-response");
+            }
+
+            return result;
         }
 
 
         private async Task<ChangeBalanceGrpcResponse> ChangeBalanceAsync(
             string transactionId, string clientId, string walletId, double amount, string assetSymbol,
-            string comment, string brokerId,  AgentInfo agent, ChangeBalanceType type, string changer, string txid, TransactionStatus status, string withdrawalAddress)
+            string comment, string brokerId, AgentInfo agent, ChangeBalanceType type, string changer, string txid,
+            TransactionStatus status, string withdrawalAddress)
 
         {
             var asset = _assetsDictionaryClient.GetAssetById(new AssetIdentity()
@@ -223,7 +270,9 @@ namespace Service.ChangeBalanceGateway.Services
             });
 
             //todo: убрать тут передачу бренда в принципе
-            var wallets = await _clientWalletService.GetWalletsByClient(new JetClientIdentity(brokerId, "default-brand", clientId));
+            var wallets =
+                await _clientWalletService.GetWalletsByClient(
+                    new JetClientIdentity(brokerId, "default-brand", clientId));
             var wallet = wallets?.Wallets.FirstOrDefault(e => e.WalletId == walletId);
 
             if (asset == null)
@@ -270,7 +319,7 @@ namespace Service.ChangeBalanceGateway.Services
                 status,
                 withdrawalAddress,
                 string.Empty
-                ));
+            ));
 
             var meRequest = new CashInOutOperation()
             {
@@ -294,7 +343,8 @@ namespace Service.ChangeBalanceGateway.Services
             _logger.LogInformation("Me call. Request: {requestText}. Response: {responseText}",
                 JsonConvert.SerializeObject(meRequest), JsonConvert.SerializeObject(meResp));
 
-            if (meResp.Status != ME.Contracts.Api.IncomingMessages.Status.Ok && meResp.Status != ME.Contracts.Api.IncomingMessages.Status.Duplicate)
+            if (meResp.Status != ME.Contracts.Api.IncomingMessages.Status.Ok &&
+                meResp.Status != ME.Contracts.Api.IncomingMessages.Status.Duplicate)
             {
                 var res = new ChangeBalanceGrpcResponse()
                 {
@@ -318,7 +368,5 @@ namespace Service.ChangeBalanceGateway.Services
                 ErrorCode = ChangeBalanceGrpcResponse.ErrorCodeEnum.Ok
             };
         }
-
-        
     }
 }
