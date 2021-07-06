@@ -21,6 +21,7 @@ using Service.ChangeBalanceGateway.Grpc.Models;
 using Service.ClientWallets.Grpc;
 using Service.Fees.Client;
 using Service.Fees.Domain.Models;
+using FeeType = ME.Contracts.Api.IncomingMessages.FeeType;
 using Status = OpenTelemetry.Trace.Status;
 
 namespace Service.ChangeBalanceGateway.Services
@@ -123,7 +124,7 @@ namespace Service.ChangeBalanceGateway.Services
             var result = await ChangeBalanceAsync(request.TransactionId, request.ClientId, request.WalletId,
                 request.Amount, request.AssetSymbol,
                 request.Comment, request.BrokerId, request.Agent, type, request.Officer, string.Empty,
-                TransactionStatus.Confirmed, string.Empty);
+                TransactionStatus.Confirmed, string.Empty, true);
 
             if (!result.Result)
             {
@@ -243,7 +244,7 @@ namespace Service.ChangeBalanceGateway.Services
                 request.FeeAmount, request.AssetSymbol,
                 "Deduct actual fee", fees.BrokerId, null, ChangeBalanceType.CryptoWithdrawal, "BitGo",
                 request.TransactionId, TransactionStatus.Confirmed, "Fees");
-            
+
             if (!result.Result)
             {
                 _logger.LogError(
@@ -257,10 +258,10 @@ namespace Service.ChangeBalanceGateway.Services
         }
 
 
-        private async Task<ChangeBalanceGrpcResponse> ChangeBalanceAsync(
-            string transactionId, string clientId, string walletId, double amount, string assetSymbol,
+        private async Task<ChangeBalanceGrpcResponse> ChangeBalanceAsync(string transactionId, string clientId,
+            string walletId, double amount, string assetSymbol,
             string comment, string brokerId, AgentInfo agent, ChangeBalanceType type, string changer, string txid,
-            TransactionStatus status, string withdrawalAddress)
+            TransactionStatus status, string withdrawalAddress, bool noFee = false)
 
         {
             var asset = _assetsDictionaryClient.GetAssetById(new AssetIdentity()
@@ -330,13 +331,16 @@ namespace Service.ChangeBalanceGateway.Services
                 AccountId = clientId,
                 WalletId = walletId,
 
-                Fees = { }, //todo: calculate fee for deposit from fee service
-
                 AssetId = asset.Symbol,
                 Volume = amount.ToString(CultureInfo.InvariantCulture),
                 Description = $"{comment} [{changer}]",
                 Timestamp = Timestamp.FromDateTime(DateTime.UtcNow)
             };
+
+            if (noFee)
+            {
+                meRequest.Fees.Add(new Fee {Type = FeeType.NoFee});
+            }
 
             var meResp = await _cashServiceClient.CashInOutAsync(meRequest);
 
