@@ -25,7 +25,7 @@
     <PackageReference Include="SimpleTrading.ServiceStatusReporterConnector" Version="1.0.9" />
     <PackageReference Include="MySettingsReader" Version="1.2.0" />
     <PackageReference Include="MyJetWallet.Service.ClientWallets.Client" Version="1.2.0" />
-    <PackageReference Include="MyJetWallet.Service.AssetsDictionary.Client" Version="1.5.4" />
+    <PackageReference Include="MyJetWallet.Service.AssetsDictionary.Client" Version="1.6.1" />
   </ItemGroup>
 
   <ItemGroup>
